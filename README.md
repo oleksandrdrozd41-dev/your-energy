@@ -1,6 +1,6 @@
 # YourEnergy
 
-Vanilla JS web application (SPA) for browsing workout categories and exercises using public API.
+Vanilla JavaScript SPA for browsing workout categories and exercises using the public API.
 
 ## Features
 - Home and Favorites pages (hash routing)
@@ -13,7 +13,7 @@ Vanilla JS web application (SPA) for browsing workout categories and exercises u
 - Favorites stored in localStorage
 
 ## Live demo
-(встав сюди лінк на GitHub Pages)
+https://oleksandrdrozd41-dev.github.io/your-energy/
 
 ## Tech stack
 HTML, CSS, JavaScript, Vite, Fetch API, localStorage.
@@ -22,3 +22,4 @@ HTML, CSS, JavaScript, Vite, Fetch API, localStorage.
 ```bash
 npm install
 npm run dev
+npm run build
