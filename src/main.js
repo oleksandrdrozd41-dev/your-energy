@@ -751,4 +751,13 @@ function escapeHtml(s) {
 function escapeAttr(s) {
   return escapeHtml(s).replaceAll('`', '&#096;');
 }
+function setupSocialStubs() {
+  document.querySelectorAll('[data-social="stub"]').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      alert('Social link is a placeholder for the project.');
+    });
+  });
+}
+
 
