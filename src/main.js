@@ -45,6 +45,7 @@ init();
 async function init() {
   setupNav();
   setupMenu();
+  setupSocialStubs();
   setupTabs();
   setupBackAndSearch();
   setupFooterSubscribe();
@@ -750,3 +751,4 @@ function escapeHtml(s) {
 function escapeAttr(s) {
   return escapeHtml(s).replaceAll('`', '&#096;');
 }
+
