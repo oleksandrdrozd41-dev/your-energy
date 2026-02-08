@@ -3,6 +3,8 @@ import './css/styles.css';
 const BASE_URL = 'https://your-energy.b.goit.study/api';
 const EMAIL_RE = /^\w+(\.\w+)?@[a-zA-Z_]+?\.[a-zA-Z]{2,3}$/;
 
+const FAVORITES_KEY = 'yourEnergy:favoritesIds';
+
 const els = {
   quoteText: document.querySelector('[data-quote-text]'),
   quoteAuthor: document.querySelector('[data-quote-author]'),
@@ -30,7 +32,7 @@ const els = {
 const state = {
   route: 'home', // home | favorites
   filter: 'Muscles',
-  mode: 'categories', // categories | exercises
+  mode: 'categories', // categories | exercises | favorites
   category: null, // { typeKey, name }
   keyword: '',
   page: 1,
@@ -40,12 +42,80 @@ const state = {
   currentExerciseId: null,
 };
 
+let escHandler = null;
+
+/* -------------------- Inline SVG icons (щоб не було ♥ ★ текстом) -------------------- */
+
+const ICON = {
+  chevronLeft: () => `
+    <svg aria-hidden="true" viewBox="0 0 24 24" style="width:16px;height:16px;display:block">
+      <path fill="currentColor" d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+    </svg>
+  `,
+  chevronRight: () => `
+    <svg aria-hidden="true" viewBox="0 0 24 24" style="width:16px;height:16px;display:block">
+      <path fill="currentColor" d="M8.59 16.59 10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+    </svg>
+  `,
+  trash: () => `
+    <svg aria-hidden="true" viewBox="0 0 24 24" style="width:16px;height:16px;display:block">
+      <path fill="currentColor" d="M6 7h12l-1 14H7L6 7zm3-3h6l1 2H8l1-2z"/>
+    </svg>
+  `,
+  starFilled: () => `
+    <svg aria-hidden="true" viewBox="0 0 24 24" style="width:14px;height:14px;display:block">
+      <path fill="currentColor" d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+    </svg>
+  `,
+  starEmpty: () => `
+    <svg aria-hidden="true" viewBox="0 0 24 24" style="width:14px;height:14px;display:block">
+      <path fill="none" stroke="currentColor" stroke-width="2" d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+    </svg>
+  `,
+};
+
+function renderStars(rating) {
+  const r = Math.max(0, Math.min(5, Number(rating) || 0));
+  const full = Math.round(r);
+  const stars = [];
+  for (let i = 1; i <= 5; i++) stars.push(i <= full ? ICON.starFilled() : ICON.starEmpty());
+  return `<span class="stars" style="display:inline-flex;gap:2px;vertical-align:middle">${stars.join('')}</span>`;
+}
+
+/* -------------------- ESC only when modal is open -------------------- */
+
+function attachEscForModals() {
+  if (escHandler) return;
+
+  escHandler = e => {
+    if (e.key !== 'Escape') return;
+
+    if (!els.rateBackdrop.classList.contains('is-hidden')) closeRatingModal();
+    else if (!els.exBackdrop.classList.contains('is-hidden')) closeExerciseModal();
+  };
+
+  document.addEventListener('keydown', escHandler);
+}
+
+function detachEscIfModalsClosed() {
+  const anyModalOpen =
+    !els.rateBackdrop.classList.contains('is-hidden') ||
+    !els.exBackdrop.classList.contains('is-hidden');
+
+  if (anyModalOpen) return;
+  if (!escHandler) return;
+
+  document.removeEventListener('keydown', escHandler);
+  escHandler = null;
+}
+
+/* -------------------- Init -------------------- */
+
 init();
 
 async function init() {
   setupNav();
   setupMenu();
-  setupSocialStubs();
   setupTabs();
   setupBackAndSearch();
   setupFooterSubscribe();
@@ -68,7 +138,7 @@ function onRouteChange() {
 
   if (state.route === 'favorites') {
     state.mode = 'favorites';
-    renderFavorites();
+    renderFavorites(); // async, але можна викликати без await
   } else {
     state.mode = 'categories';
     state.category = null;
@@ -92,6 +162,8 @@ function setupNav() {
   // nothing extra; hash routing works by default
 }
 
+/* -------------------- Burger menu -------------------- */
+
 function setupMenu() {
   if (!els.burger || !els.menu) return;
 
@@ -112,10 +184,13 @@ function setupMenu() {
   els.menuLinks.forEach(l => l.addEventListener('click', close));
 }
 
+/* -------------------- Tabs -------------------- */
+
 function setupTabs() {
   els.tabs.forEach(btn => {
     btn.addEventListener('click', () => {
       if (state.route !== 'home') return;
+
       const filter = btn.getAttribute('data-filter');
       state.filter = filter;
       state.mode = 'categories';
@@ -132,6 +207,8 @@ function setupTabs() {
     });
   });
 }
+
+/* -------------------- Back + Search -------------------- */
 
 function setupBackAndSearch() {
   els.backBtn.addEventListener('click', () => {
@@ -153,6 +230,8 @@ function setupBackAndSearch() {
     loadExercises();
   });
 }
+
+/* -------------------- Subscribe -------------------- */
 
 function setupFooterSubscribe() {
   els.subscribeForm.addEventListener('submit', async e => {
@@ -176,6 +255,8 @@ function setupFooterSubscribe() {
     }
   });
 }
+
+/* -------------------- Modals + global click delegation -------------------- */
 
 function setupModals() {
   // Exercise modal
@@ -205,6 +286,7 @@ function setupModals() {
       state.mode = 'exercises';
       state.page = 1;
       state.keyword = '';
+
       els.searchForm.classList.remove('is-hidden');
       els.backBtn.classList.remove('is-hidden');
       els.searchForm.reset();
@@ -218,7 +300,9 @@ function setupModals() {
     if (pageBtn) {
       const page = Number(pageBtn.getAttribute('data-page'));
       if (!Number.isFinite(page) || page < 1 || page > state.totalPages) return;
+
       state.page = page;
+
       if (state.route === 'favorites') {
         renderFavorites();
       } else if (state.mode === 'categories') {
@@ -232,13 +316,12 @@ function setupModals() {
     const favToggle = e.target.closest('[data-fav-toggle]');
     if (favToggle) {
       const id = favToggle.getAttribute('data-fav-toggle');
-      toggleFavoriteById(id);
+      toggleFavoriteId(id);
+
       if (state.route === 'favorites') renderFavorites();
       else if (!els.exBackdrop.classList.contains('is-hidden')) {
-        // refresh modal button label
-        const ex = getFavoriteById(id);
         const btn = els.exContent.querySelector('[data-fav-toggle]');
-        if (btn) btn.textContent = ex ? 'Remove from favorites' : 'Add to favorites';
+        if (btn) btn.textContent = isFavoriteId(id) ? 'Remove from favorites' : 'Add to favorites';
       }
       return;
     }
@@ -248,16 +331,6 @@ function setupModals() {
       const id = giveRating.getAttribute('data-give-rating');
       openRatingModal(id);
       return;
-    }
-  });
-
-  document.addEventListener('keydown', e => {
-    if (e.key !== 'Escape') return;
-    if (!els.rateBackdrop.classList.contains('is-hidden')) closeRatingModal();
-    else if (!els.exBackdrop.classList.contains('is-hidden')) closeExerciseModal();
-    else if (!els.menu.classList.contains('is-hidden')) {
-      els.menu.classList.add('is-hidden');
-      els.burger.setAttribute('aria-expanded', 'false');
     }
   });
 }
@@ -277,15 +350,13 @@ async function loadQuoteCached() {
         return;
       }
     }
-  } catch (_) {
-    // ignore
-  }
+  } catch (_) {}
 
   try {
     const quote = await apiGet('/quote');
     localStorage.setItem(key, JSON.stringify({ date: today, quote }));
     renderQuote(quote);
-  } catch (err) {
+  } catch (_) {
     els.quoteText.textContent = 'Failed to load quote.';
     els.quoteAuthor.textContent = '';
   }
@@ -331,11 +402,12 @@ function renderCategories(items) {
       const subtitle = it?.filter || state.filter;
       const img = it?.imgURL || it?.imgUrl || it?.imageUrl || '';
       const style = img ? `style="background-image:url('${escapeAttr(img)}')"` : '';
+
       return `
         <button class="card" type="button" data-category="${escapeAttr(name)}" ${style}>
           <div class="card__top">
             <span class="badge">${escapeHtml(subtitle)}</span>
-            <span class="meta">Open →</span>
+            <span class="meta">Open</span>
           </div>
           <h3 class="title">${escapeHtml(name)}</h3>
           <p class="meta">Tap to see exercises</p>
@@ -364,13 +436,8 @@ async function loadExercises() {
   const page = state.page;
   const limit = state.limitExercises;
 
-  const params = {
-    page,
-    limit,
-  };
-
+  const params = { page, limit };
   params[state.category.typeKey] = state.category.name;
-
   if (state.keyword) params.keyword = state.keyword;
 
   try {
@@ -422,34 +489,80 @@ function filterToKey(filter) {
   return 'muscles';
 }
 
-/* -------------------- Favorites -------------------- */
+/* -------------------- Favorites (IDs only + requests on Favorites page) -------------------- */
 
-function renderFavorites() {
+function getFavoriteIds() {
+  try {
+    const raw = localStorage.getItem(FAVORITES_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr.filter(Boolean).map(String) : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function setFavoriteIds(ids) {
+  const uniq = Array.from(new Set(ids.map(String)));
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify(uniq));
+}
+
+function isFavoriteId(id) {
+  return getFavoriteIds().includes(String(id));
+}
+
+function toggleFavoriteId(id) {
+  const s = String(id);
+  const ids = getFavoriteIds();
+  const idx = ids.indexOf(s);
+
+  if (idx >= 0) ids.splice(idx, 1);
+  else ids.unshift(s);
+
+  setFavoriteIds(ids);
+}
+
+async function renderFavorites() {
   state.mode = 'favorites';
   els.backBtn.classList.add('is-hidden');
   els.searchForm.classList.add('is-hidden');
   els.searchForm.reset();
-
-  const favs = getFavorites();
   els.pagination.innerHTML = '';
 
-  if (!favs.length) {
+  const ids = getFavoriteIds();
+
+  if (!ids.length) {
     els.list.innerHTML = `<div class="card"><h3 class="title">Favorites is empty</h3><p class="meta">Add exercises from Home.</p></div>`;
     return;
   }
 
-  // simple pagination for favorites (client-side)
+  setLoading();
+
   const perPage = 9;
-  const totalPages = Math.max(1, Math.ceil(favs.length / perPage));
+  const totalPages = Math.max(1, Math.ceil(ids.length / perPage));
   state.totalPages = totalPages;
 
   const page = Math.min(state.page, totalPages);
   state.page = page;
 
   const start = (page - 1) * perPage;
-  const chunk = favs.slice(start, start + perPage);
+  const chunkIds = ids.slice(start, start + perPage);
 
-  els.list.innerHTML = chunk
+  // requests by ids (як просить викладач)
+  const settled = await Promise.allSettled(
+    chunkIds.map(id => apiGet(`/exercises/${encodeURIComponent(id)}`))
+  );
+
+  const exercises = settled
+    .filter(r => r.status === 'fulfilled')
+    .map(r => r.value);
+
+  if (!exercises.length) {
+    els.list.innerHTML = `<div class="card"><h3 class="title">Favorites</h3><p class="meta">Failed to load favorites. Try again.</p></div>`;
+    renderPagination(state.page, state.totalPages);
+    return;
+  }
+
+  els.list.innerHTML = exercises
     .map(ex => {
       const id = ex?._id || ex?.id || '';
       const name = ex?.name || 'Exercise';
@@ -461,7 +574,9 @@ function renderFavorites() {
         <div class="card">
           <div class="card__top">
             <span class="badge">FAVORITE</span>
-            <button class="icon-btn" type="button" aria-label="Remove from favorites" data-fav-toggle="${escapeAttr(id)}">♥</button>
+            <button class="icon-btn" type="button" aria-label="Remove from favorites" data-fav-toggle="${escapeAttr(id)}">
+              ${ICON.trash()}
+            </button>
           </div>
           <h3 class="title">${escapeHtml(name)}</h3>
           <p class="meta">Burned calories: ${escapeHtml(String(burned))} / 3 min</p>
@@ -481,12 +596,15 @@ function renderFavorites() {
 
 async function openExerciseModal(id) {
   state.currentExerciseId = id;
+
   els.exContent.innerHTML = `<p class="meta">Loading...</p>`;
   els.exBackdrop.classList.remove('is-hidden');
+  attachEscForModals();
 
   try {
     const ex = await apiGet(`/exercises/${encodeURIComponent(id)}`);
-    const isFav = Boolean(getFavoriteById(id));
+    const isFav = isFavoriteId(id);
+
     const name = ex?.name || 'Exercise';
     const rating = Number(ex?.rating) || 0;
     const target = ex?.target || '';
@@ -500,7 +618,11 @@ async function openExerciseModal(id) {
     els.exContent.innerHTML = `
       <div class="grid" style="grid-template-columns: 1fr; gap: 16px;">
         <div>
-          ${img ? `<img src="${escapeAttr(img)}" alt="${escapeAttr(name)}" style="width:100%; max-width:380px; border-radius:14px; border:1px solid var(--line);" />` : ''}
+          ${
+            img
+              ? `<img src="${escapeAttr(img)}" alt="${escapeAttr(name)}" style="width:100%; max-width:380px; border-radius:14px; border:1px solid var(--line);" />`
+              : ''
+          }
         </div>
         <div>
           <h2 class="title" style="font-size:22px; margin:0 0 10px;">${escapeHtml(name)}</h2>
@@ -513,19 +635,14 @@ async function openExerciseModal(id) {
           <p class="meta" style="margin-top:10px;">${escapeHtml(desc)}</p>
 
           <div class="actions" style="justify-content:flex-start; margin-top:14px;">
-            <button class="btn" type="button" data-fav-toggle="${escapeAttr(id)}">${isFav ? 'Remove from favorites' : 'Add to favorites'}</button>
+            <button class="btn" type="button" data-fav-toggle="${escapeAttr(id)}">
+              ${isFav ? 'Remove from favorites' : 'Add to favorites'}
+            </button>
             <button class="btn" type="button" data-give-rating="${escapeAttr(id)}">Give a rating</button>
           </div>
         </div>
       </div>
     `;
-
-    // Store minimal in favorites (so Favorites page has data)
-    if (!getFavoriteById(id)) {
-      // do nothing; only add by button
-    }
-    // keep last fetched exercise in memory for toggle action
-    cacheLastExercise(ex);
   } catch (err) {
     els.exContent.innerHTML = `<p class="meta">${escapeHtml(normalizeError(err))}</p>`;
   }
@@ -534,23 +651,34 @@ async function openExerciseModal(id) {
 function closeExerciseModal() {
   els.exBackdrop.classList.add('is-hidden');
   els.exContent.innerHTML = '';
+  detachEscIfModalsClosed();
 }
 
 function openRatingModal(id) {
   state.currentExerciseId = id;
-  closeExerciseModal();
+
+  closeExerciseModal(); // це зніме ESC якщо інших модалок нема
+  attachEscForModals(); // а тут знов підвісимо ESC тільки для Rating
 
   els.rateContent.innerHTML = `
     <form data-rate-form>
       <p class="meta" style="margin-top:0;">Rating</p>
 
       <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-        ${[1,2,3,4,5].map(n => `
+        ${[1, 2, 3, 4, 5]
+          .map(
+            n => `
           <label style="display:flex; align-items:center; gap:6px; border:1px solid var(--line); padding:8px 10px; border-radius:10px;">
             <input type="radio" name="rating" value="${n}" required />
-            <span>${'★'.repeat(n)}</span>
+            <span style="display:inline-flex;gap:2px;align-items:center">
+              ${Array.from({ length: n })
+                .map(() => ICON.starFilled())
+                .join('')}
+            </span>
           </label>
-        `).join('')}
+        `
+          )
+          .join('')}
       </div>
 
       <input class="subscribe__input" type="email" name="email" placeholder="Email" required />
@@ -566,86 +694,45 @@ function openRatingModal(id) {
   const form = els.rateContent.querySelector('[data-rate-form]');
   const msg = els.rateContent.querySelector('[data-rate-msg]');
 
-  form.addEventListener('submit', async e => {
-    e.preventDefault();
-    msg.textContent = '';
+  form.addEventListener(
+    'submit',
+    async e => {
+      e.preventDefault();
+      msg.textContent = '';
 
-    const fd = new FormData(form);
-    const rating = Number(fd.get('rating'));
-    const email = String(fd.get('email') || '').trim();
+      const fd = new FormData(form);
+      const rating = Number(fd.get('rating'));
+      const email = String(fd.get('email') || '').trim();
 
-    if (!EMAIL_RE.test(email)) {
-      msg.textContent = 'Invalid email format.';
-      return;
-    }
-    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
-      msg.textContent = 'Choose rating 1..5';
-      return;
-    }
+      if (!EMAIL_RE.test(email)) {
+        msg.textContent = 'Invalid email format.';
+        return;
+      }
+      if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+        msg.textContent = 'Choose rating 1..5';
+        return;
+      }
 
-    try {
-      await apiPatch(`/exercises/${encodeURIComponent(id)}/rating`, { rating });
-      closeRatingModal();
-      await openExerciseModal(id);
-    } catch (err) {
-      msg.textContent = normalizeError(err);
-    }
-  }, { once: true });
+      try {
+        await apiPatch(`/exercises/${encodeURIComponent(id)}/rating`, { rating });
+        closeRatingModal();
+        await openExerciseModal(id);
+      } catch (err) {
+        msg.textContent = normalizeError(err);
+      }
+    },
+    { once: true }
+  );
 }
 
 function closeRatingModal() {
   els.rateBackdrop.classList.add('is-hidden');
   els.rateContent.innerHTML = '';
+  // ВАЖЛИВО: без цього ESC "висітиме" завжди після закриття rating
+  detachEscIfModalsClosed();
 }
 
-/* -------------------- Favorites storage -------------------- */
-
-function getFavorites() {
-  try {
-    const raw = localStorage.getItem('yourEnergy:favorites');
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr : [];
-  } catch (_) {
-    return [];
-  }
-}
-
-function setFavorites(arr) {
-  localStorage.setItem('yourEnergy:favorites', JSON.stringify(arr));
-}
-
-function getFavoriteById(id) {
-  return getFavorites().find(x => (x?._id || x?.id) === id);
-}
-
-function toggleFavoriteById(id) {
-  const favs = getFavorites();
-  const idx = favs.findIndex(x => (x?._id || x?.id) === id);
-
-  if (idx >= 0) {
-    favs.splice(idx, 1);
-    setFavorites(favs);
-    return;
-  }
-
-  // add from last cached exercise details if possible
-  const ex = getLastExercise();
-  if (ex && ((ex._id || ex.id) === id)) {
-    favs.unshift(ex);
-    setFavorites(favs);
-    return;
-  }
-
-  // fallback: store minimal
-  favs.unshift({ id });
-  setFavorites(favs);
-}
-
-let _lastExercise = null;
-function cacheLastExercise(ex) { _lastExercise = ex; }
-function getLastExercise() { return _lastExercise; }
-
-/* -------------------- Pagination -------------------- */
+/* -------------------- Pagination (with arrows) -------------------- */
 
 function renderPagination(page, totalPages) {
   const p = Number(page) || 1;
@@ -658,19 +745,27 @@ function renderPagination(page, totalPages) {
 
   const buttons = [];
 
-  if (p > 1) buttons.push(btn(p - 1, 'Prev'));
+  if (p > 1) buttons.push(pageBtn(p - 1, ICON.chevronLeft(), 'Previous page'));
 
   for (let i = start; i <= end; i++) {
-    buttons.push(btn(i, String(i), i === p));
+    buttons.push(numberBtn(i, String(i), i === p));
   }
 
-  if (p < t) buttons.push(btn(p + 1, 'Next'));
+  if (p < t) buttons.push(pageBtn(p + 1, ICON.chevronRight(), 'Next page'));
 
   els.pagination.innerHTML = buttons.join('');
 }
 
-function btn(page, label, active = false) {
-  return `<button class="page-btn ${active ? 'is-active' : ''}" type="button" data-page="${page}">${escapeHtml(label)}</button>`;
+function pageBtn(page, innerHtml, ariaLabel) {
+  return `<button class="page-btn" type="button" data-page="${page}" aria-label="${escapeAttr(
+    ariaLabel
+  )}">${innerHtml}</button>`;
+}
+
+function numberBtn(page, label, active = false) {
+  return `<button class="page-btn ${active ? 'is-active' : ''}" type="button" data-page="${page}">${escapeHtml(
+    label
+  )}</button>`;
 }
 
 function setLoading() {
@@ -710,14 +805,12 @@ async function toError(res) {
   try {
     const data = await res.json();
     msg = data?.message || data?.error || msg;
-  } catch (_) {
-    // ignore
-  }
+  } catch (_) {}
   return new Error(msg);
 }
 
 function normalizeError(err) {
-  return (err && err.message) ? err.message : 'Request failed';
+  return err && err.message ? err.message : 'Request failed';
 }
 
 /* -------------------- Utils -------------------- */
@@ -733,12 +826,6 @@ function qs(obj) {
   return p.toString();
 }
 
-function renderStars(rating) {
-  const r = Math.max(0, Math.min(5, rating));
-  const full = Math.round(r);
-  return `${'★'.repeat(full)}${'☆'.repeat(5 - full)}`;
-}
-
 function escapeHtml(s) {
   return String(s)
     .replaceAll('&', '&amp;')
@@ -751,13 +838,3 @@ function escapeHtml(s) {
 function escapeAttr(s) {
   return escapeHtml(s).replaceAll('`', '&#096;');
 }
-function setupSocialStubs() {
-  document.querySelectorAll('[data-social="stub"]').forEach(link => {
-    link.addEventListener('click', e => {
-      e.preventDefault();
-      alert('Social link is a placeholder for the project.');
-    });
-  });
-}
-
-
