@@ -528,3 +528,30 @@ input,textarea{ font:inherit; }
   .subscribe{ flex-direction:column; }
   .subscribe__btn{ width:100%; }
 }
+/* ===== FIX: hero images should NOT stretch ===== */
+
+/* Якщо hero/hero_side вставлені як <img> */
+img[src*="img/home/hero"],
+img[src*="img/home/hero_side"] {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;        /* ключове */
+  object-position: center;  /* щоб кадр був по центру */
+  display: block;
+}
+
+/* Якщо hero/hero_side задані як background-image у div */
+*[style*="hero.png"],
+*[style*="hero_side.png"] {
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
+
+/* На випадок якщо контейнер не обрізає зайве */
+.hero,
+.hero__img,
+.hero__image,
+.hero__side {
+  overflow: hidden;
+}
