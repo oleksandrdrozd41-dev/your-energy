@@ -3,6 +3,7 @@ import './css/styles.css';
 const BASE_URL = 'https://your-energy.b.goit.study/api';
 const EMAIL_RE = /^\w+(\.\w+)?@[a-zA-Z_]+?\.[a-zA-Z]{2,3}$/;
 
+// Favorites must be stored as IDs only (teacher requirement)
 const FAVORITES_KEY = 'yourEnergy:favoritesIds';
 
 const els = {
@@ -15,10 +16,13 @@ const els = {
   searchForm: document.querySelector('[data-search-form]'),
   subscribeForm: document.querySelector('[data-subscribe-form]'),
   subscribeMsg: document.querySelector('[data-subscribe-msg]'),
+
   burger: document.querySelector('[data-burger]'),
   menu: document.querySelector('[data-menu]'),
   menuClose: document.querySelector('[data-menu-close]'),
   menuLinks: Array.from(document.querySelectorAll('[data-menu-link]')),
+
+  topBtn: document.querySelector('[data-top]'),
 
   exBackdrop: document.querySelector('[data-ex-modal-backdrop]'),
   exClose: document.querySelector('[data-ex-modal-close]'),
@@ -37,95 +41,32 @@ const state = {
   keyword: '',
   page: 1,
   limitCategories: 12,
-  limitExercises: 10,
+  limitExercises: 9,
   totalPages: 1,
   currentExerciseId: null,
 };
 
 let escHandler = null;
 
-/* -------------------- Inline SVG icons (щоб не було ♥ ★ текстом) -------------------- */
-
-const ICON = {
-  chevronLeft: () => `
-    <svg aria-hidden="true" viewBox="0 0 24 24" style="width:16px;height:16px;display:block">
-      <path fill="currentColor" d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-    </svg>
-  `,
-  chevronRight: () => `
-    <svg aria-hidden="true" viewBox="0 0 24 24" style="width:16px;height:16px;display:block">
-      <path fill="currentColor" d="M8.59 16.59 10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
-    </svg>
-  `,
-  trash: () => `
-    <svg aria-hidden="true" viewBox="0 0 24 24" style="width:16px;height:16px;display:block">
-      <path fill="currentColor" d="M6 7h12l-1 14H7L6 7zm3-3h6l1 2H8l1-2z"/>
-    </svg>
-  `,
-  starFilled: () => `
-    <svg aria-hidden="true" viewBox="0 0 24 24" style="width:14px;height:14px;display:block">
-      <path fill="currentColor" d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
-    </svg>
-  `,
-  starEmpty: () => `
-    <svg aria-hidden="true" viewBox="0 0 24 24" style="width:14px;height:14px;display:block">
-      <path fill="none" stroke="currentColor" stroke-width="2" d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
-    </svg>
-  `,
-};
-
-function renderStars(rating) {
-  const r = Math.max(0, Math.min(5, Number(rating) || 0));
-  const full = Math.round(r);
-  const stars = [];
-  for (let i = 1; i <= 5; i++) stars.push(i <= full ? ICON.starFilled() : ICON.starEmpty());
-  return `<span class="stars" style="display:inline-flex;gap:2px;vertical-align:middle">${stars.join('')}</span>`;
-}
-
-/* -------------------- ESC only when modal is open -------------------- */
-
-function attachEscForModals() {
-  if (escHandler) return;
-
-  escHandler = e => {
-    if (e.key !== 'Escape') return;
-
-    if (!els.rateBackdrop.classList.contains('is-hidden')) closeRatingModal();
-    else if (!els.exBackdrop.classList.contains('is-hidden')) closeExerciseModal();
-  };
-
-  document.addEventListener('keydown', escHandler);
-}
-
-function detachEscIfModalsClosed() {
-  const anyModalOpen =
-    !els.rateBackdrop.classList.contains('is-hidden') ||
-    !els.exBackdrop.classList.contains('is-hidden');
-
-  if (anyModalOpen) return;
-  if (!escHandler) return;
-
-  document.removeEventListener('keydown', escHandler);
-  escHandler = null;
-}
+init();
 
 /* -------------------- Init -------------------- */
 
-init();
-
 async function init() {
-  setupNav();
   setupMenu();
   setupTabs();
   setupBackAndSearch();
   setupFooterSubscribe();
   setupModals();
+  setupScrollTop();
 
   window.addEventListener('hashchange', onRouteChange);
 
   await loadQuoteCached();
   onRouteChange();
 }
+
+/* -------------------- Routing -------------------- */
 
 function onRouteChange() {
   const hash = window.location.hash || '#/';
@@ -138,7 +79,7 @@ function onRouteChange() {
 
   if (state.route === 'favorites') {
     state.mode = 'favorites';
-    renderFavorites(); // async, але можна викликати без await
+    renderFavorites();
   } else {
     state.mode = 'categories';
     state.category = null;
@@ -158,21 +99,19 @@ function highlightNav() {
   });
 }
 
-function setupNav() {
-  // nothing extra; hash routing works by default
-}
-
-/* -------------------- Burger menu -------------------- */
+/* -------------------- Menu -------------------- */
 
 function setupMenu() {
   if (!els.burger || !els.menu) return;
 
   const open = () => {
     els.menu.classList.remove('is-hidden');
+    els.menu.setAttribute('aria-hidden', 'false');
     els.burger.setAttribute('aria-expanded', 'true');
   };
   const close = () => {
     els.menu.classList.add('is-hidden');
+    els.menu.setAttribute('aria-hidden', 'true');
     els.burger.setAttribute('aria-expanded', 'false');
   };
 
@@ -190,7 +129,6 @@ function setupTabs() {
   els.tabs.forEach(btn => {
     btn.addEventListener('click', () => {
       if (state.route !== 'home') return;
-
       const filter = btn.getAttribute('data-filter');
       state.filter = filter;
       state.mode = 'categories';
@@ -224,14 +162,14 @@ function setupBackAndSearch() {
 
   els.searchForm.addEventListener('submit', e => {
     e.preventDefault();
-    const formData = new FormData(els.searchForm);
-    state.keyword = String(formData.get('keyword') || '').trim();
+    const fd = new FormData(els.searchForm);
+    state.keyword = String(fd.get('keyword') || '').trim();
     state.page = 1;
     loadExercises();
   });
 }
 
-/* -------------------- Subscribe -------------------- */
+/* -------------------- Footer subscribe -------------------- */
 
 function setupFooterSubscribe() {
   els.subscribeForm.addEventListener('submit', async e => {
@@ -256,16 +194,30 @@ function setupFooterSubscribe() {
   });
 }
 
-/* -------------------- Modals + global click delegation -------------------- */
+/* -------------------- Scroll top -------------------- */
+
+function setupScrollTop() {
+  if (!els.topBtn) return;
+
+  const toggle = () => {
+    els.topBtn.classList.toggle('is-show', window.scrollY > 420);
+  };
+  toggle();
+  window.addEventListener('scroll', toggle, { passive: true });
+
+  els.topBtn.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
+/* -------------------- Modals -------------------- */
 
 function setupModals() {
-  // Exercise modal
   els.exClose.addEventListener('click', closeExerciseModal);
   els.exBackdrop.addEventListener('click', e => {
     if (e.target === els.exBackdrop) closeExerciseModal();
   });
 
-  // Rating modal
   els.rateClose.addEventListener('click', closeRatingModal);
   els.rateBackdrop.addEventListener('click', e => {
     if (e.target === els.rateBackdrop) closeRatingModal();
@@ -282,7 +234,6 @@ function setupModals() {
     const catBtn = e.target.closest('[data-category]');
     if (catBtn) {
       const name = catBtn.getAttribute('data-category');
-      const filter = state.filter;
       state.mode = 'exercises';
       state.page = 1;
       state.keyword = '';
@@ -291,7 +242,7 @@ function setupModals() {
       els.backBtn.classList.remove('is-hidden');
       els.searchForm.reset();
 
-      state.category = { name, typeKey: filterToKey(filter) };
+      state.category = { name, typeKey: filterToKey(state.filter) };
       await loadExercises();
       return;
     }
@@ -300,16 +251,11 @@ function setupModals() {
     if (pageBtn) {
       const page = Number(pageBtn.getAttribute('data-page'));
       if (!Number.isFinite(page) || page < 1 || page > state.totalPages) return;
-
       state.page = page;
 
-      if (state.route === 'favorites') {
-        renderFavorites();
-      } else if (state.mode === 'categories') {
-        loadCategories();
-      } else {
-        loadExercises();
-      }
+      if (state.route === 'favorites') renderFavorites();
+      else if (state.mode === 'categories') loadCategories();
+      else loadExercises();
       return;
     }
 
@@ -318,10 +264,11 @@ function setupModals() {
       const id = favToggle.getAttribute('data-fav-toggle');
       toggleFavoriteId(id);
 
-      if (state.route === 'favorites') renderFavorites();
-      else if (!els.exBackdrop.classList.contains('is-hidden')) {
+      if (state.route === 'favorites') {
+        renderFavorites();
+      } else if (!els.exBackdrop.classList.contains('is-hidden')) {
         const btn = els.exContent.querySelector('[data-fav-toggle]');
-        if (btn) btn.textContent = isFavoriteId(id) ? 'Remove from favorites' : 'Add to favorites';
+        if (btn) btn.innerHTML = favoriteBtnInner(isFavoriteId(id));
       }
       return;
     }
@@ -333,6 +280,29 @@ function setupModals() {
       return;
     }
   });
+}
+
+function attachEscForModals() {
+  if (escHandler) return;
+
+  escHandler = e => {
+    if (e.key !== 'Escape') return;
+    if (!els.rateBackdrop.classList.contains('is-hidden')) closeRatingModal();
+    else if (!els.exBackdrop.classList.contains('is-hidden')) closeExerciseModal();
+  };
+  document.addEventListener('keydown', escHandler);
+}
+
+function detachEscIfModalsClosed() {
+  const anyModalOpen =
+    !els.rateBackdrop.classList.contains('is-hidden') ||
+    !els.exBackdrop.classList.contains('is-hidden');
+
+  if (anyModalOpen) return;
+  if (!escHandler) return;
+
+  document.removeEventListener('keydown', escHandler);
+  escHandler = null;
 }
 
 /* -------------------- Quote (cached) -------------------- */
@@ -356,7 +326,7 @@ async function loadQuoteCached() {
     const quote = await apiGet('/quote');
     localStorage.setItem(key, JSON.stringify({ date: today, quote }));
     renderQuote(quote);
-  } catch (_) {
+  } catch (err) {
     els.quoteText.textContent = 'Failed to load quote.';
     els.quoteAuthor.textContent = '';
   }
@@ -389,7 +359,7 @@ async function loadCategories() {
     renderCategories(items);
     renderPagination(state.page, state.totalPages);
   } catch (err) {
-    els.list.innerHTML = `<div class="card"><p class="meta">${escapeHtml(normalizeError(err))}</p></div>`;
+    els.list.innerHTML = `<div class="card"><p class="muted">${escapeHtml(normalizeError(err))}</p></div>`;
   }
 }
 
@@ -400,17 +370,23 @@ function renderCategories(items) {
     .map(it => {
       const name = it?.name || '';
       const subtitle = it?.filter || state.filter;
-      const img = it?.imgURL || it?.imgUrl || it?.imageUrl || '';
-      const style = img ? `style="background-image:url('${escapeAttr(img)}')"` : '';
-
+      const img = it?.imgURL || it?.imgUrl || it?.imageUrl || it?.img || '';
       return `
-        <button class="card" type="button" data-category="${escapeAttr(name)}" ${style}>
-          <div class="card__top">
+        <button class="card-tile" type="button" data-category="${escapeAttr(name)}">
+          <div class="card-tile__bg" style="${img ? `background-image:url('${escapeAttr(img)}')` : ''}"></div>
+
+          <div class="card-tile__top">
             <span class="badge">${escapeHtml(subtitle)}</span>
-            <span class="meta">Open</span>
+            <span class="open" aria-hidden="true">
+              Open
+              <svg class="icon" width="18" height="18">
+                <use href="./img/sprite.svg#icon-arrow-right"></use>
+              </svg>
+            </span>
           </div>
-          <h3 class="title">${escapeHtml(name)}</h3>
-          <p class="meta">Tap to see exercises</p>
+
+          <h3 class="card-tile__title">${escapeHtml(name)}</h3>
+          <p class="card-tile__hint">Tap to see exercises</p>
         </button>
       `;
     })
@@ -448,11 +424,13 @@ async function loadExercises() {
     renderExercises(items);
     renderPagination(state.page, state.totalPages);
   } catch (err) {
-    els.list.innerHTML = `<div class="card"><p class="meta">${escapeHtml(normalizeError(err))}</p></div>`;
+    els.list.innerHTML = `<div class="card"><p class="muted">${escapeHtml(normalizeError(err))}</p></div>`;
   }
 }
 
 function renderExercises(items) {
+  state.mode = 'exercises';
+
   els.list.innerHTML = items
     .map(ex => {
       const id = ex?._id || ex?.id || '';
@@ -463,15 +441,17 @@ function renderExercises(items) {
       const burned = ex?.burnedCalories ?? ex?.burnedcalories ?? ex?.calories ?? 0;
 
       return `
-        <div class="card">
-          <div class="card__top">
+        <div class="card exercise-card">
+          <div class="exercise-card__top">
             <span class="badge">WORKOUT</span>
-            <span class="meta">${escapeHtml(rating.toFixed(2))} ${renderStars(rating)}</span>
+            <span class="muted">${escapeHtml(rating.toFixed(1))} ${renderStars(rating)}</span>
           </div>
-          <h3 class="title">${escapeHtml(name)}</h3>
-          <p class="meta">Burned calories: ${escapeHtml(String(burned))} / 3 min</p>
-          <p class="meta">Body part: ${escapeHtml(String(bodyPart))} · Target: ${escapeHtml(String(target))}</p>
-          <div class="actions">
+
+          <h3 class="card__title" style="margin:0;">${escapeHtml(name)}</h3>
+          <p class="muted" style="margin:0;">Burned calories: ${escapeHtml(String(burned))} / 3 min</p>
+          <p class="muted" style="margin:0;">Body part: ${escapeHtml(String(bodyPart))} · Target: ${escapeHtml(String(target))}</p>
+
+          <div class="actions" style="margin-top:6px;">
             <button class="btn" type="button" data-start="${escapeAttr(id)}">Start</button>
           </div>
         </div>
@@ -489,7 +469,215 @@ function filterToKey(filter) {
   return 'muscles';
 }
 
-/* -------------------- Favorites (IDs only + requests on Favorites page) -------------------- */
+/* -------------------- Favorites -------------------- */
+
+async function renderFavorites() {
+  state.mode = 'favorites';
+  els.backBtn.classList.add('is-hidden');
+  els.searchForm.classList.add('is-hidden');
+  els.searchForm.reset();
+
+  els.pagination.innerHTML = '';
+
+  const ids = getFavoriteIds();
+  if (!ids.length) {
+    els.list.innerHTML = `<div class="card"><h3 class="card__title">Favorites is empty</h3><p class="muted">Add exercises from Home.</p></div>`;
+    return;
+  }
+
+  const perPage = 9;
+  const totalPages = Math.max(1, Math.ceil(ids.length / perPage));
+  state.totalPages = totalPages;
+
+  const page = Math.min(state.page, totalPages);
+  state.page = page;
+
+  const start = (page - 1) * perPage;
+  const chunk = ids.slice(start, start + perPage);
+
+  setLoading();
+
+  const exercises = await Promise.all(
+    chunk.map(async id => {
+      try {
+        return await apiGet(`/exercises/${encodeURIComponent(id)}`);
+      } catch {
+        return { id, name: 'Exercise (not found)' };
+      }
+    })
+  );
+
+  els.list.innerHTML = exercises
+    .map(ex => {
+      const id = ex?._id || ex?.id || '';
+      const name = ex?.name || 'Exercise';
+      const bodyPart = ex?.bodyPart || ex?.bodypart || '';
+      const target = ex?.target || '';
+      const burned = ex?.burnedCalories ?? ex?.burnedcalories ?? ex?.calories ?? 0;
+
+      return `
+        <div class="card exercise-card">
+          <div class="exercise-card__top">
+            <span class="badge">FAVORITE</span>
+            <button class="icon-btn" type="button" aria-label="Remove from favorites" data-fav-toggle="${escapeAttr(id)}">
+              <svg class="icon" width="20" height="20" aria-hidden="true">
+                <use href="./img/sprite.svg#icon-trash"></use>
+              </svg>
+            </button>
+          </div>
+
+          <h3 class="card__title" style="margin:0;">${escapeHtml(name)}</h3>
+          <p class="muted" style="margin:0;">Burned calories: ${escapeHtml(String(burned))} / 3 min</p>
+          <p class="muted" style="margin:0;">Body part: ${escapeHtml(String(bodyPart))} · Target: ${escapeHtml(String(target))}</p>
+
+          <div class="actions" style="margin-top:6px;">
+            <button class="btn" type="button" data-start="${escapeAttr(id)}">Start</button>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+
+  renderPagination(state.page, state.totalPages);
+}
+
+/* -------------------- Exercise modal -------------------- */
+
+async function openExerciseModal(id) {
+  state.currentExerciseId = id;
+  els.exContent.innerHTML = `<p class="muted">Loading...</p>`;
+  els.exBackdrop.classList.remove('is-hidden');
+  attachEscForModals();
+
+  try {
+    const ex = await apiGet(`/exercises/${encodeURIComponent(id)}`);
+    const isFav = isFavoriteId(id);
+
+    const name = ex?.name || 'Exercise';
+    const rating = Number(ex?.rating) || 0;
+    const target = ex?.target || '';
+    const bodyPart = ex?.bodyPart || ex?.bodypart || '';
+    const equipment = ex?.equipment || '';
+    const popularity = ex?.popularity ?? '';
+    const burned = ex?.burnedCalories ?? ex?.burnedcalories ?? ex?.calories ?? 0;
+    const desc = ex?.description || '';
+    const img = ex?.gifUrl || ex?.imgURL || ex?.imgUrl || ex?.imageUrl || '';
+
+    els.exContent.innerHTML = `
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+        <div>
+          ${img ? `<img src="${escapeAttr(img)}" alt="${escapeAttr(name)}" style="width:100%; border-radius:18px; border:1px solid var(--line);" />` : ''}
+        </div>
+
+        <div>
+          <h2 style="margin:0 0 8px; font-size:22px;">${escapeHtml(name)}</h2>
+          <div class="muted" style="margin-bottom:10px;">${escapeHtml(rating.toFixed(1))} ${renderStars(rating)}</div>
+
+          <p class="muted" style="margin:0 0 6px;"><b>Target:</b> ${escapeHtml(String(target))}</p>
+          <p class="muted" style="margin:0 0 6px;"><b>Body part:</b> ${escapeHtml(String(bodyPart))}</p>
+          <p class="muted" style="margin:0 0 6px;"><b>Equipment:</b> ${escapeHtml(String(equipment))}</p>
+          <p class="muted" style="margin:0 0 6px;"><b>Popular:</b> ${escapeHtml(String(popularity))}</p>
+          <p class="muted" style="margin:0 0 6px;"><b>Burned calories:</b> ${escapeHtml(String(burned))} / 3 min</p>
+          <p class="muted" style="margin:10px 0 0;">${escapeHtml(desc)}</p>
+
+          <div class="actions" style="justify-content:flex-start; margin-top:14px;">
+            <button class="btn btn--light" type="button" data-fav-toggle="${escapeAttr(id)}">
+              ${favoriteBtnInner(isFav)}
+            </button>
+            <button class="btn" type="button" data-give-rating="${escapeAttr(id)}">Give a rating</button>
+          </div>
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    els.exContent.innerHTML = `<p class="muted">${escapeHtml(normalizeError(err))}</p>`;
+  }
+}
+
+function closeExerciseModal() {
+  els.exBackdrop.classList.add('is-hidden');
+  els.exContent.innerHTML = '';
+  detachEscIfModalsClosed();
+}
+
+function favoriteBtnInner(isFav) {
+  return `
+    <span style="display:inline-flex; align-items:center; gap:8px;">
+      <svg class="icon" width="18" height="18" aria-hidden="true">
+        <use href="./img/sprite.svg#icon-heart"></use>
+      </svg>
+      <span>${isFav ? 'Remove from favorites' : 'Add to favorites'}</span>
+    </span>
+  `;
+}
+
+/* -------------------- Rating modal -------------------- */
+
+function openRatingModal(id) {
+  state.currentExerciseId = id;
+  closeExerciseModal();
+
+  els.rateContent.innerHTML = `
+    <form data-rate-form>
+      <p class="muted" style="margin-top:0;">Rating</p>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+        ${[1,2,3,4,5].map(n => `
+          <label style="display:flex; align-items:center; gap:8px; border:1px solid var(--line); padding:10px 12px; border-radius:12px;">
+            <input type="radio" name="rating" value="${n}" required />
+            <span class="stars">${renderStars(n)}</span>
+          </label>
+        `).join('')}
+      </div>
+
+      <input class="subscribe__input" style="background:var(--surface); color:var(--text); border:1px solid var(--line);" type="email" name="email" placeholder="Email" required />
+      <textarea class="subscribe__input" style="background:var(--surface); color:var(--text); border:1px solid var(--line); border-radius:18px;" name="comment" placeholder="Your comment" rows="3"></textarea>
+
+      <button class="btn" type="submit">Send</button>
+      <p class="muted" data-rate-msg style="min-height:16px;"></p>
+    </form>
+  `;
+
+  els.rateBackdrop.classList.remove('is-hidden');
+  attachEscForModals();
+
+  const form = els.rateContent.querySelector('[data-rate-form]');
+  const msg = els.rateContent.querySelector('[data-rate-msg]');
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    msg.textContent = '';
+
+    const fd = new FormData(form);
+    const rating = Number(fd.get('rating'));
+    const email = String(fd.get('email') || '').trim();
+
+    if (!EMAIL_RE.test(email)) {
+      msg.textContent = 'Invalid email format.';
+      return;
+    }
+    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+      msg.textContent = 'Choose rating 1..5';
+      return;
+    }
+
+    try {
+      await apiPatch(`/exercises/${encodeURIComponent(id)}/rating`, { rating });
+      closeRatingModal();
+      await openExerciseModal(id);
+    } catch (err) {
+      msg.textContent = normalizeError(err);
+    }
+  }, { once: true });
+}
+
+function closeRatingModal() {
+  els.rateBackdrop.classList.add('is-hidden');
+  els.rateContent.innerHTML = '';
+  detachEscIfModalsClosed();
+}
+
+/* -------------------- Favorites storage (IDs only) -------------------- */
 
 function getFavoriteIds() {
   try {
@@ -511,265 +699,80 @@ function isFavoriteId(id) {
 }
 
 function toggleFavoriteId(id) {
-  const s = String(id);
   const ids = getFavoriteIds();
-  const idx = ids.indexOf(s);
+  const key = String(id);
+  const idx = ids.indexOf(key);
 
-  if (idx >= 0) ids.splice(idx, 1);
-  else ids.unshift(s);
+  if (idx >= 0) {
+    ids.splice(idx, 1);
+    setFavoriteIds(ids);
+    return;
+  }
 
+  ids.unshift(key);
   setFavoriteIds(ids);
 }
 
-async function renderFavorites() {
-  state.mode = 'favorites';
-  els.backBtn.classList.add('is-hidden');
-  els.searchForm.classList.add('is-hidden');
-  els.searchForm.reset();
-  els.pagination.innerHTML = '';
-
-  const ids = getFavoriteIds();
-
-  if (!ids.length) {
-    els.list.innerHTML = `<div class="card"><h3 class="title">Favorites is empty</h3><p class="meta">Add exercises from Home.</p></div>`;
-    return;
-  }
-
-  setLoading();
-
-  const perPage = 9;
-  const totalPages = Math.max(1, Math.ceil(ids.length / perPage));
-  state.totalPages = totalPages;
-
-  const page = Math.min(state.page, totalPages);
-  state.page = page;
-
-  const start = (page - 1) * perPage;
-  const chunkIds = ids.slice(start, start + perPage);
-
-  // requests by ids (як просить викладач)
-  const settled = await Promise.allSettled(
-    chunkIds.map(id => apiGet(`/exercises/${encodeURIComponent(id)}`))
-  );
-
-  const exercises = settled
-    .filter(r => r.status === 'fulfilled')
-    .map(r => r.value);
-
-  if (!exercises.length) {
-    els.list.innerHTML = `<div class="card"><h3 class="title">Favorites</h3><p class="meta">Failed to load favorites. Try again.</p></div>`;
-    renderPagination(state.page, state.totalPages);
-    return;
-  }
-
-  els.list.innerHTML = exercises
-    .map(ex => {
-      const id = ex?._id || ex?.id || '';
-      const name = ex?.name || 'Exercise';
-      const bodyPart = ex?.bodyPart || ex?.bodypart || '';
-      const target = ex?.target || '';
-      const burned = ex?.burnedCalories ?? ex?.burnedcalories ?? ex?.calories ?? 0;
-
-      return `
-        <div class="card">
-          <div class="card__top">
-            <span class="badge">FAVORITE</span>
-            <button class="icon-btn" type="button" aria-label="Remove from favorites" data-fav-toggle="${escapeAttr(id)}">
-              ${ICON.trash()}
-            </button>
-          </div>
-          <h3 class="title">${escapeHtml(name)}</h3>
-          <p class="meta">Burned calories: ${escapeHtml(String(burned))} / 3 min</p>
-          <p class="meta">Body part: ${escapeHtml(String(bodyPart))} · Target: ${escapeHtml(String(target))}</p>
-          <div class="actions">
-            <button class="btn" type="button" data-start="${escapeAttr(id)}">Start</button>
-          </div>
-        </div>
-      `;
-    })
-    .join('');
-
-  renderPagination(state.page, state.totalPages);
-}
-
-/* -------------------- Modals -------------------- */
-
-async function openExerciseModal(id) {
-  state.currentExerciseId = id;
-
-  els.exContent.innerHTML = `<p class="meta">Loading...</p>`;
-  els.exBackdrop.classList.remove('is-hidden');
-  attachEscForModals();
-
-  try {
-    const ex = await apiGet(`/exercises/${encodeURIComponent(id)}`);
-    const isFav = isFavoriteId(id);
-
-    const name = ex?.name || 'Exercise';
-    const rating = Number(ex?.rating) || 0;
-    const target = ex?.target || '';
-    const bodyPart = ex?.bodyPart || ex?.bodypart || '';
-    const equipment = ex?.equipment || '';
-    const popularity = ex?.popularity ?? '';
-    const burned = ex?.burnedCalories ?? ex?.burnedcalories ?? ex?.calories ?? 0;
-    const desc = ex?.description || '';
-    const img = ex?.gifUrl || ex?.imgURL || ex?.imgUrl || ex?.imageUrl || '';
-
-    els.exContent.innerHTML = `
-      <div class="grid" style="grid-template-columns: 1fr; gap: 16px;">
-        <div>
-          ${
-            img
-              ? `<img src="${escapeAttr(img)}" alt="${escapeAttr(name)}" style="width:100%; max-width:380px; border-radius:14px; border:1px solid var(--line);" />`
-              : ''
-          }
-        </div>
-        <div>
-          <h2 class="title" style="font-size:22px; margin:0 0 10px;">${escapeHtml(name)}</h2>
-          <p class="meta">${escapeHtml(rating.toFixed(2))} ${renderStars(rating)}</p>
-          <p class="meta"><b>Target:</b> ${escapeHtml(String(target))}</p>
-          <p class="meta"><b>Body part:</b> ${escapeHtml(String(bodyPart))}</p>
-          <p class="meta"><b>Equipment:</b> ${escapeHtml(String(equipment))}</p>
-          <p class="meta"><b>Popular:</b> ${escapeHtml(String(popularity))}</p>
-          <p class="meta"><b>Burned calories:</b> ${escapeHtml(String(burned))} / 3 min</p>
-          <p class="meta" style="margin-top:10px;">${escapeHtml(desc)}</p>
-
-          <div class="actions" style="justify-content:flex-start; margin-top:14px;">
-            <button class="btn" type="button" data-fav-toggle="${escapeAttr(id)}">
-              ${isFav ? 'Remove from favorites' : 'Add to favorites'}
-            </button>
-            <button class="btn" type="button" data-give-rating="${escapeAttr(id)}">Give a rating</button>
-          </div>
-        </div>
-      </div>
-    `;
-  } catch (err) {
-    els.exContent.innerHTML = `<p class="meta">${escapeHtml(normalizeError(err))}</p>`;
-  }
-}
-
-function closeExerciseModal() {
-  els.exBackdrop.classList.add('is-hidden');
-  els.exContent.innerHTML = '';
-  detachEscIfModalsClosed();
-}
-
-function openRatingModal(id) {
-  state.currentExerciseId = id;
-
-  closeExerciseModal(); // це зніме ESC якщо інших модалок нема
-  attachEscForModals(); // а тут знов підвісимо ESC тільки для Rating
-
-  els.rateContent.innerHTML = `
-    <form data-rate-form>
-      <p class="meta" style="margin-top:0;">Rating</p>
-
-      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-        ${[1, 2, 3, 4, 5]
-          .map(
-            n => `
-          <label style="display:flex; align-items:center; gap:6px; border:1px solid var(--line); padding:8px 10px; border-radius:10px;">
-            <input type="radio" name="rating" value="${n}" required />
-            <span style="display:inline-flex;gap:2px;align-items:center">
-              ${Array.from({ length: n })
-                .map(() => ICON.starFilled())
-                .join('')}
-            </span>
-          </label>
-        `
-          )
-          .join('')}
-      </div>
-
-      <input class="subscribe__input" type="email" name="email" placeholder="Email" required />
-      <textarea class="subscribe__input" name="comment" placeholder="Your comment" rows="3" style="resize:vertical;"></textarea>
-
-      <button class="subscribe__btn" type="submit">Send</button>
-      <p class="meta" data-rate-msg style="min-height:16px;"></p>
-    </form>
-  `;
-
-  els.rateBackdrop.classList.remove('is-hidden');
-
-  const form = els.rateContent.querySelector('[data-rate-form]');
-  const msg = els.rateContent.querySelector('[data-rate-msg]');
-
-  form.addEventListener(
-    'submit',
-    async e => {
-      e.preventDefault();
-      msg.textContent = '';
-
-      const fd = new FormData(form);
-      const rating = Number(fd.get('rating'));
-      const email = String(fd.get('email') || '').trim();
-
-      if (!EMAIL_RE.test(email)) {
-        msg.textContent = 'Invalid email format.';
-        return;
-      }
-      if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
-        msg.textContent = 'Choose rating 1..5';
-        return;
-      }
-
-      try {
-        await apiPatch(`/exercises/${encodeURIComponent(id)}/rating`, { rating });
-        closeRatingModal();
-        await openExerciseModal(id);
-      } catch (err) {
-        msg.textContent = normalizeError(err);
-      }
-    },
-    { once: true }
-  );
-}
-
-function closeRatingModal() {
-  els.rateBackdrop.classList.add('is-hidden');
-  els.rateContent.innerHTML = '';
-  // ВАЖЛИВО: без цього ESC "висітиме" завжди після закриття rating
-  detachEscIfModalsClosed();
-}
-
-/* -------------------- Pagination (with arrows) -------------------- */
+/* -------------------- Pagination -------------------- */
 
 function renderPagination(page, totalPages) {
   const p = Number(page) || 1;
   const t = Number(totalPages) || 1;
 
-  const maxButtons = 7;
-  let start = Math.max(1, p - Math.floor(maxButtons / 2));
-  let end = Math.min(t, start + maxButtons - 1);
-  start = Math.max(1, end - maxButtons + 1);
+  const parts = [];
 
-  const buttons = [];
+  parts.push(pageBtn(p - 1, 'Prev', p === 1, true));
 
-  if (p > 1) buttons.push(pageBtn(p - 1, ICON.chevronLeft(), 'Previous page'));
+  if (t <= 7) {
+    for (let i = 1; i <= t; i++) parts.push(pageBtn(i, String(i), false, false, i === p));
+  } else {
+    let start = Math.max(2, p - 2);
+    let end = Math.min(t - 1, p + 2);
 
-  for (let i = start; i <= end; i++) {
-    buttons.push(numberBtn(i, String(i), i === p));
+    if (p <= 3) { start = 2; end = 6; }
+    if (p >= t - 2) { start = t - 5; end = t - 1; }
+
+    parts.push(pageBtn(1, '1', false, false, p === 1));
+    if (start > 2) parts.push(dots());
+
+    for (let i = start; i <= end; i++) parts.push(pageBtn(i, String(i), false, false, i === p));
+
+    if (end < t - 1) parts.push(dots());
+    parts.push(pageBtn(t, String(t), false, false, p === t));
   }
 
-  if (p < t) buttons.push(pageBtn(p + 1, ICON.chevronRight(), 'Next page'));
+  parts.push(pageBtn(p + 1, 'Next', p === t, false, false, true));
 
-  els.pagination.innerHTML = buttons.join('');
+  els.pagination.innerHTML = parts.join('');
 }
 
-function pageBtn(page, innerHtml, ariaLabel) {
-  return `<button class="page-btn" type="button" data-page="${page}" aria-label="${escapeAttr(
-    ariaLabel
-  )}">${innerHtml}</button>`;
+function dots() {
+  return `<span class="page-dots" aria-hidden="true">…</span>`;
 }
 
-function numberBtn(page, label, active = false) {
-  return `<button class="page-btn ${active ? 'is-active' : ''}" type="button" data-page="${page}">${escapeHtml(
-    label
-  )}</button>`;
+function pageBtn(page, label, disabled = false, isPrev = false, active = false, isNext = false) {
+  const icon = isPrev
+    ? `<svg class="icon" width="18" height="18" aria-hidden="true"><use href="./img/sprite.svg#icon-chev-left"></use></svg>`
+    : isNext
+      ? `<svg class="icon" width="18" height="18" aria-hidden="true"><use href="./img/sprite.svg#icon-chev-right"></use></svg>`
+      : '';
+
+  const text = (isPrev || isNext) ? '' : escapeHtml(label);
+
+  const safePage = Number(page);
+  const data = Number.isFinite(safePage) ? `data-page="${safePage}"` : '';
+
+  return `
+    <button class="page-btn ${active ? 'is-active' : ''}" type="button" ${data} ${disabled ? 'disabled' : ''} aria-label="${escapeAttr(label)}">
+      ${isPrev ? icon : ''}
+      ${text}
+      ${isNext ? icon : ''}
+    </button>
+  `;
 }
 
 function setLoading() {
-  els.list.innerHTML = `<div class="card"><p class="meta">Loading...</p></div>`;
+  els.list.innerHTML = `<div class="card"><p class="muted">Loading...</p></div>`;
 }
 
 /* -------------------- API -------------------- */
@@ -810,7 +813,7 @@ async function toError(res) {
 }
 
 function normalizeError(err) {
-  return err && err.message ? err.message : 'Request failed';
+  return (err && err.message) ? err.message : 'Request failed';
 }
 
 /* -------------------- Utils -------------------- */
@@ -824,6 +827,22 @@ function qs(obj) {
     p.set(k, s);
   });
   return p.toString();
+}
+
+function renderStars(rating) {
+  const r = Math.max(0, Math.min(5, Number(rating) || 0));
+  const full = Math.round(r);
+
+  const stars = [];
+  for (let i = 1; i <= 5; i++) {
+    const id = i <= full ? 'icon-star-filled' : 'icon-star-empty';
+    stars.push(
+      `<svg class="icon" width="16" height="16" aria-hidden="true">
+        <use href="./img/sprite.svg#${id}"></use>
+      </svg>`
+    );
+  }
+  return `<span class="stars">${stars.join('')}</span>`;
 }
 
 function escapeHtml(s) {
