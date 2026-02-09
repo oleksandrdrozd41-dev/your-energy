@@ -21,7 +21,7 @@ body{
   line-height:1.4;
 }
 
-img{ max-width:100%; display:block; }
+img{ max-width:100%; display:block; height:auto; } /* важливо: без спотворення */
 a{ color:inherit; text-decoration:none; }
 button{ font:inherit; cursor:pointer; }
 input,textarea{ font:inherit; }
@@ -161,23 +161,45 @@ input,textarea{ font:inherit; }
   font-size:14px;
 }
 
-.hero__right{ position:relative; }
+.hero__right{ position:relative; max-width:100%; }
+
+/* ✅ FIX: головне hero зображення НЕ розтягуємо */
 .hero__img{
+  width:100%;
+  height:auto !important;          /* ключове */
+  object-fit:cover;                /* якщо десь задається висота — хай кропає, не тягне */
+  object-position:center;
   border-radius:var(--radius);
   box-shadow:var(--shadow);
   border:1px solid var(--line);
 }
+
+/* Якщо раптом hero__img — це div з background-image (на всяк випадок) */
+.hero__img{
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+}
+
 .hero__aside{
   position:absolute;
   right:0;
   top:18px;
   transform:translateX(20%);
 }
+
+/* ✅ FIX: бокове hero_side теж не тягнемо */
 .hero__side{
   width:170px;
+  height:auto !important;          /* ключове */
+  object-fit:cover;
+  object-position:center;
   border-radius:18px;
   border:1px solid var(--line);
   box-shadow:var(--shadow);
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
 }
 
 /* -------------------- Sections -------------------- */
@@ -272,7 +294,8 @@ input,textarea{ font:inherit; }
 .quote__author{ margin:10px 0 0; font-weight:700; }
 
 .info{ padding:0; overflow:hidden; }
-.info__img{ width:100%; height:auto; }
+/* на всяк: щоб info-card теж не тягнуло */
+.info__img{ width:100%; height:auto; object-fit:cover; }
 .info__body{ padding:16px 18px 18px; }
 
 /* Grid of items */
@@ -527,31 +550,4 @@ input,textarea{ font:inherit; }
   .grid{ grid-template-columns: 1fr; }
   .subscribe{ flex-direction:column; }
   .subscribe__btn{ width:100%; }
-}
-/* ===== FIX: hero images should NOT stretch ===== */
-
-/* Якщо hero/hero_side вставлені як <img> */
-img[src*="img/home/hero"],
-img[src*="img/home/hero_side"] {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;        /* ключове */
-  object-position: center;  /* щоб кадр був по центру */
-  display: block;
-}
-
-/* Якщо hero/hero_side задані як background-image у div */
-*[style*="hero.png"],
-*[style*="hero_side.png"] {
-  background-size: cover !important;
-  background-position: center !important;
-  background-repeat: no-repeat !important;
-}
-
-/* На випадок якщо контейнер не обрізає зайве */
-.hero,
-.hero__img,
-.hero__image,
-.hero__side {
-  overflow: hidden;
 }
