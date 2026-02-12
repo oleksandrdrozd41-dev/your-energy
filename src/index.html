@@ -9,12 +9,12 @@
     <header class="header">
       <div class="container header__inner">
         <a class="logo" href="#/" aria-label="Your Energy home">
-          <span class="logo__text">YourEnergy</span>
+          <span class="logo__text">YOUR ENERGY</span>
         </a>
 
         <nav class="nav" aria-label="Main navigation">
-          <a class="nav__link" data-nav="home" href="#/">Home</a>
-          <a class="nav__link" data-nav="favorites" href="#/favorites">Favorites</a>
+          <a class="nav__link" data-route="home" href="#/">Home</a>
+          <a class="nav__link" data-route="favorites" href="#/favorites">Favorites</a>
         </nav>
 
         <div class="header__right">
@@ -40,17 +40,19 @@
     </header>
 
     <div class="menu is-hidden" data-menu aria-hidden="true">
-      <div class="menu__panel" role="dialog" aria-modal="true" aria-label="Menu">
+      <div class="menu__inner" role="dialog" aria-modal="true" aria-label="Menu">
         <button class="menu__close" type="button" data-menu-close aria-label="Close menu">
           <svg class="icon" width="24" height="24" aria-hidden="true">
             <use href="./img/sprite.svg#icon-close"></use>
           </svg>
         </button>
 
-        <a class="menu__link" data-menu-link href="#/">Home</a>
-        <a class="menu__link" data-menu-link href="#/favorites">Favorites</a>
+        <nav class="menu__nav" aria-label="Menu navigation">
+          <a class="menu__link" data-menu-link data-route="home" href="#/">Home</a>
+          <a class="menu__link" data-menu-link data-route="favorites" href="#/favorites">Favorites</a>
+        </nav>
 
-        <div class="menu__social">
+        <div class="menu__social" aria-label="Social links">
           <a class="social__link" href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
             <img class="social__icon" src="./img/icons/facebook.svg" alt="" width="24" height="24" />
           </a>
@@ -66,27 +68,34 @@
 
     <main>
       <section class="hero">
-        <div class="container hero__inner">
-          <div class="hero__left">
-            <div class="hero__kicker" aria-hidden="true">✺</div>
-            <h1 class="hero__title">Get <span class="hero__title-italic">Body</span> in<br />shape, Stay healthy</h1>
-            <p class="hero__text">
-              Transform your physique and embrace a healthier lifestyle with our comprehensive fitness and nutrition support.
-            </p>
+        <div class="container">
+          <div class="hero__top">
+            <div class="hero__left">
+              <div class="hero__kicker" aria-hidden="true">✺</div>
+              <h1 class="hero__title">Get <span class="hero__title-italic">Body</span> in<br />shape, Stay healthy</h1>
+              <p class="hero__text">
+                Transform your physique and embrace a healthier lifestyle with our comprehensive fitness and nutrition support.
+              </p>
+            </div>
 
-            <div class="hero__tags">
-              <span class="tag">#Sport</span>
-              <span class="tag">#Healthy</span>
-              <span class="tag">#Workout</span>
-              <span class="tag">#Diet</span>
+            <div class="hero__right" aria-label="Preview">
+              <img class="hero__side" src="./img/home/hero_side.png" alt="Yoga" width="260" height="160" loading="lazy" />
+              <div class="hero__tags hero__tags--side" aria-label="Tags">
+                <span class="tag">#Sport</span>
+                <span class="tag">#Healthy</span>
+                <span class="tag">#Workout</span>
+                <span class="tag">#Diet</span>
+              </div>
             </div>
           </div>
 
-          <div class="hero__right">
-            <img class="hero__img" src="./img/home/hero.png" alt="Training" width="860" height="360" loading="eager" />
-            <div class="hero__aside">
-              <img class="hero__side" src="./img/home/hero_side.png" alt="Yoga" width="260" height="160" loading="lazy" />
-            </div>
+          <img class="hero__img" src="./img/home/hero.png" alt="Training" width="1200" height="520" loading="eager" />
+
+          <div class="hero__tags hero__tags--below" aria-label="Tags">
+            <span class="tag">#Sport</span>
+            <span class="tag">#Healthy</span>
+            <span class="tag">#Workout</span>
+            <span class="tag">#Diet</span>
           </div>
         </div>
       </section>
@@ -94,56 +103,69 @@
       <section class="section exercises">
         <div class="container">
           <div class="exercises__head">
-            <h2 class="section__title">Exercises</h2>
+            <h2 class="section__title">
+              <button class="title__link" type="button" data-title-back>Exercises</button>
+              <span class="title__sep is-hidden" data-title-sep>/</span>
+              <span class="title__sub is-hidden" data-title-sub></span>
+            </h2>
 
-            <div class="tabs" aria-label="Filters">
-              <button class="tab is-active" type="button" data-filter="Muscles">Muscles</button>
-              <button class="tab" type="button" data-filter="Body parts">Body parts</button>
-              <button class="tab" type="button" data-filter="Equipment">Equipment</button>
+            <div class="exercises__head-right">
+              <form class="search is-hidden" data-search>
+                <input class="search__input" type="text" name="keyword" placeholder="Search" data-search-input />
+                <button class="search__btn" type="submit" aria-label="Search">
+                  <svg class="icon" width="18" height="18">
+                    <use href="./img/sprite.svg#icon-search"></use>
+                  </svg>
+                </button>
+              </form>
+
+              <div class="tabs" aria-label="Filters" data-tabs>
+                <button class="tab is-active" type="button" data-filter-btn="Muscles">Muscles</button>
+                <button class="tab" type="button" data-filter-btn="Body parts">Body parts</button>
+                <button class="tab" type="button" data-filter-btn="Equipment">Equipment</button>
+              </div>
             </div>
           </div>
 
           <div class="exercises__grid">
             <aside class="exercises__aside">
-              <div class="quote card">
-                <div class="quote__icon" aria-hidden="true">
-                  <svg class="icon icon--fill" width="24" height="24">
+              <div class="quote card card--dark quote-card">
+                <div class="quote__head">
+                  <span class="quote__badge" aria-hidden="true">
+                    <svg class="icon" width="20" height="20"><use href="./img/sprite.svg#icon-logo"></use></svg>
+                  </span>
+                  <h3 class="quote__title">Quote of the day</h3>
+                  <svg class="quote__mark icon icon--fill" width="20" height="20" aria-hidden="true">
                     <use href="./img/sprite.svg#icon-quote"></use>
                   </svg>
                 </div>
-                <h3 class="card__title">Quote of the day</h3>
                 <p class="quote__text" data-quote-text></p>
                 <p class="quote__author" data-quote-author></p>
               </div>
 
-              <div class="info card">
-                <img class="info__img" src="./img/home/info_card.png" alt="Workout tips" width="360" height="220" loading="lazy" />
-                <div class="info__body">
-                  <h3 class="card__title">110 min</h3>
-                  <p class="muted">
-                    The World Health Organization recommends at least 150 minutes of moderate-intensity aerobic activity every week,
-                    or 75 minutes of vigorous-intensity aerobic activity every week.
-                  </p>
+              <div class="photo-card" aria-label="Photo">
+                <img class="photo-card__img" src="./img/home/info_card.png" alt="Fitness" width="444" height="222" loading="lazy" />
+              </div>
+
+              <div class="min-card card">
+                <div class="min-card__head">
+                  <span class="min-card__icon" aria-hidden="true">
+                    <svg class="icon" width="20" height="20"><use href="./img/sprite.svg#icon-logo"></use></svg>
+                  </span>
+                  <div class="min-card__titles">
+                    <h3 class="min-card__title">110 min</h3>
+                    <p class="min-card__subtitle">Daily norm of sports</p>
+                  </div>
                 </div>
+                <p class="min-card__text">
+                  The World Health Organization recommends at least 150 minutes of moderate-intensity aerobic activity throughout the
+                  week for adults aged 18–64. What if we adjust that number to 110 minutes every day? Dedicating 110 minutes daily to
+                  sporting activities may offer unparalleled benefits to physical health, mental well-being, and overall quality of life.
+                </p>
               </div>
             </aside>
 
             <div class="exercises__content">
-              <div class="toolbar">
-                <button class="back is-hidden" type="button" data-back><span>Back</span></button>
-
-                <form class="search is-hidden" data-search-form>
-                  <label class="search__field">
-                    <input class="search__input" type="text" name="keyword" placeholder="Search" autocomplete="off" />
-                    <span class="search__icon" aria-hidden="true">
-                      <svg class="icon" width="18" height="18">
-                        <use href="./img/sprite.svg#icon-search"></use>
-                      </svg>
-                    </span>
-                  </label>
-                </form>
-              </div>
-
               <div class="grid" data-list></div>
               <div class="pagination" data-pagination></div>
             </div>
@@ -160,9 +182,9 @@
 
     <footer class="footer">
       <div class="container footer__inner">
-        <div class="footer__left">
+        <div>
           <div class="footer__logo">YOUR ENERGY</div>
-          <div class="footer__social">
+          <div class="footer__social" aria-label="Social links">
             <a class="social__link" href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
               <img class="social__icon" src="./img/icons/facebook.svg" alt="" width="24" height="24" />
             </a>
@@ -175,16 +197,14 @@
           </div>
         </div>
 
-        <div class="footer__center">
-          <p class="footer__title">Transforming your body shape with us</p>
-        </div>
+        <p class="footer__title">Transforming your <em>body</em><br />shape with us</p>
 
-        <div class="footer__right">
-          <p class="footer__subtitle">Subscribe and learn about new exercises!</p>
+        <div>
+          <p class="footer__form-title">Subscribe and learn about new exercises!</p>
 
-          <form class="subscribe" data-subscribe-form>
-            <input class="subscribe__input" type="email" name="email" placeholder="Email" required />
-            <button class="subscribe__btn" type="submit">Send</button>
+          <form class="footer__form" data-subscribe-form>
+            <input class="footer__input" type="email" name="email" placeholder="Email" required />
+            <button class="footer__btn" type="submit">Send</button>
           </form>
           <p class="footer__msg" data-subscribe-msg></p>
         </div>
@@ -192,11 +212,12 @@
 
       <div class="footer__bottom">
         <div class="container footer__bottom-inner">
-          <span>©2026</span>
+          <span>Your Energy, All rights reserved.</span>
           <div class="footer__links">
             <a href="https://example.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
             <a href="https://example.com/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a>
           </div>
+          <span>©2023</span>
         </div>
       </div>
     </footer>
