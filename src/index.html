@@ -13,8 +13,8 @@
         </a>
 
         <nav class="nav" aria-label="Main navigation">
-          <a class="nav__link" data-route="home" href="#/">Home</a>
-          <a class="nav__link" data-route="favorites" href="#/favorites">Favorites</a>
+          <a class="nav__link" data-nav="home" href="#/">Home</a>
+          <a class="nav__link" data-nav="favorites" href="#/favorites">Favorites</a>
         </nav>
 
         <div class="header__right">
@@ -48,8 +48,8 @@
         </button>
 
         <nav class="menu__nav" aria-label="Menu navigation">
-          <a class="menu__link" data-menu-link data-route="home" href="#/">Home</a>
-          <a class="menu__link" data-menu-link data-route="favorites" href="#/favorites">Favorites</a>
+          <a class="menu__link" data-menu-link href="#/">Home</a>
+          <a class="menu__link" data-menu-link href="#/favorites">Favorites</a>
         </nav>
 
         <div class="menu__social" aria-label="Social links">
@@ -89,7 +89,20 @@
             </div>
           </div>
 
-          <img class="hero__img" src="./img/home/hero.png" alt="Training" width="1200" height="520" loading="eager" />
+          <picture>
+            <source srcset="./img/home/hero.webp" type="image/webp" />
+            <source srcset="./img/home/hero.jpg" type="image/jpeg" />
+            <img
+              class="hero__img"
+              src="./img/home/hero.jpg"
+              alt="Training"
+              width="1400"
+              height="435"
+              loading="eager"
+              decoding="async"
+              fetchpriority="high"
+            />
+          </picture>
 
           <div class="hero__tags hero__tags--below" aria-label="Tags">
             <span class="tag">#Sport</span>

@@ -19,38 +19,41 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const els = {
   body: document.body,
-  navLinks: Array.from(document.querySelectorAll('[data-route]')),
-  burger: document.querySelector('[data-burger]'),
-  menu: document.querySelector('[data-menu]'),
-  menuClose: document.querySelector('[data-menu-close]'),
-  menuLinks: Array.from(document.querySelectorAll('[data-menu-link]')),
+  navLinks: [...document.querySelectorAll('[data-nav]')],
 
-  title: document.querySelector('[data-title]'),
+  titleBack: document.querySelector('[data-title-back]'),
+  titleSep: document.querySelector('[data-title-sep]'),
   titleSub: document.querySelector('[data-title-sub]'),
-  back: document.querySelector('[data-back]'),
+
   tabs: document.querySelector('[data-tabs]'),
+
   searchForm: document.querySelector('[data-search]'),
   searchInput: document.querySelector('[data-search-input]'),
 
   list: document.querySelector('[data-list]'),
   pagination: document.querySelector('[data-pagination]'),
-
-  quoteText: document.querySelector('[data-quote-text]'),
-  quoteAuthor: document.querySelector('[data-quote-author]'),
-
-  subForm: document.querySelector('[data-subscribe-form]'),
-  subEmail: document.querySelector('[data-subscribe-email]'),
-  subMsg: document.querySelector('[data-subscribe-msg]'),
-
-  top: document.querySelector('[data-top]'),
+  pagerPrev: document.querySelector('[data-page-prev]'),
+  pagerNext: document.querySelector('[data-page-next]'),
+  pagerCurrent: document.querySelector('[data-page-current]'),
+  pagerTotal: document.querySelector('[data-page-total]'),
 
   exBackdrop: document.querySelector('[data-ex-modal-backdrop]'),
   exClose: document.querySelector('[data-ex-modal-close]'),
-  exContent: document.querySelector('[data-ex-modal]'),
+  exContent: document.querySelector('[data-ex-modal-content]'),
 
   rateBackdrop: document.querySelector('[data-rate-modal-backdrop]'),
   rateClose: document.querySelector('[data-rate-modal-close]'),
-  rateContent: document.querySelector('[data-rate-modal]'),
+  rateContent: document.querySelector('[data-rate-modal-content]'),
+
+  burger: document.querySelector('[data-burger]'),
+  menu: document.querySelector('[data-menu-backdrop]'),
+  menuClose: document.querySelector('[data-menu-close]'),
+  menuLinks: [...document.querySelectorAll('[data-menu-link]')],
+
+  scrollTop: document.querySelector('[data-scroll-top]'),
+
+  subForm: document.querySelector('[data-subscribe-form]'),
+  subMsg: document.querySelector('[data-subscribe-msg]'),
 };
 
 /* -------------------- State -------------------- */
@@ -188,7 +191,7 @@ function parseRoute() {
 
 function applyActiveNav(route) {
   els.navLinks.forEach(a => {
-    const r = a.getAttribute('data-route');
+    const r = a.getAttribute('data-nav');
     if (!r) return;
     a.classList.toggle('is-active', r === route);
   });
@@ -199,22 +202,25 @@ function applyView() {
   els.body.setAttribute('data-route', state.route);
   applyActiveNav(state.route);
 
-  // Title
-  if (state.route === 'favorites') {
-    els.title.textContent = 'Favorites';
-    els.titleSub.textContent = '';
-  } else {
-    els.title.textContent = 'Exercises';
-    els.titleSub.textContent = state.mode === 'exercises' && state.category ? ` / ${state.category.name}` : '';
+  const onHome = state.route === 'home';
+  const isExercises = onHome && state.mode === 'exercises' && state.category;
+
+  // Title (button acts as Back only in exercise list view)
+  if (els.titleBack) {
+    els.titleBack.textContent = state.route === 'favorites' ? 'Favorites' : 'Exercises';
+    els.titleBack.disabled = !isExercises;
+    els.titleBack.classList.toggle('is-disabled', !isExercises);
   }
 
-  // Back/search/tabs
-  const showTabs = state.route === 'home';
-  const showBack = state.route === 'home' && state.mode === 'exercises';
-  const showSearch = state.route === 'home' && state.mode === 'exercises';
+  if (els.titleSep) els.titleSep.classList.toggle('is-hidden', !isExercises);
+  if (els.titleSub) {
+    els.titleSub.textContent = isExercises ? state.category.name : '';
+    els.titleSub.classList.toggle('is-hidden', !isExercises);
+  }
 
-  els.tabs?.classList.toggle('is-hidden', !showTabs);
-  els.back?.classList.toggle('is-hidden', !showBack);
+  // Tabs/search
+  els.tabs?.classList.toggle('is-hidden', !onHome);
+  const showSearch = onHome && state.mode === 'exercises';
   els.searchForm?.classList.toggle('is-hidden', !showSearch);
 
   // List variant
@@ -760,7 +766,7 @@ function attachEvents() {
     await loadCategories();
   });
 
-  els.back?.addEventListener('click', async () => {
+  els.titleBack?.addEventListener('click', async () => {
     if (state.route !== 'home') return;
     state.mode = 'categories';
     state.category = null;
@@ -854,29 +860,33 @@ function attachEvents() {
   // Subscribe
   els.subForm?.addEventListener('submit', async e => {
     e.preventDefault();
-    els.subMsg.textContent = '';
-    const email = String(els.subEmail?.value || '').trim();
+    if (els.subMsg) els.subMsg.textContent = '';
+
+    const emailEl = els.subForm.querySelector('input[type="email"]');
+    const email = String(emailEl?.value || '').trim();
+
     if (!EMAIL_RE.test(email)) {
-      els.subMsg.textContent = 'Invalid email format.';
+      if (els.subMsg) els.subMsg.textContent = 'Invalid email format.';
       return;
     }
+
     try {
       await apiPost('/subscription', { email });
-      els.subMsg.textContent = 'Subscription successful.';
-      els.subEmail.value = '';
+      if (els.subMsg) els.subMsg.textContent = 'Subscription successful.';
+      if (emailEl) emailEl.value = '';
     } catch (err) {
-      els.subMsg.textContent = normalizeError(err);
+      if (els.subMsg) els.subMsg.textContent = normalizeError(err);
     }
   });
 
   // Scroll top
   const onScroll = () => {
     const show = window.scrollY > 500;
-    els.top?.classList.toggle('is-visible', show);
+    els.scrollTop?.classList.toggle('is-visible', show);
   };
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
-  els.top?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  els.scrollTop?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 }
 
 /* -------------------- Init -------------------- */
