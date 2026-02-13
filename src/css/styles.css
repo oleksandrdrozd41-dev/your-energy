@@ -1012,6 +1012,24 @@ body[data-route='favorites'] .search {
     grid-template-columns: 1fr;
   }
 
+  /*
+    Mobile layout (per Figma): show the exercises list first,
+    then the quote/photo/min cards under it.
+  */
+  .exercises__grid {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .exercises__content {
+    order: 1;
+  }
+
+  .exercises__aside {
+    order: 2;
+  }
+
   .exercises__aside {
     grid-template-columns: 1fr;
     grid-template-areas:
