@@ -865,7 +865,36 @@ function attachEvents() {
 
   // Modals close
   els.exClose?.addEventListener('click', closeExerciseModal);
-  els.exBackdrop?.addEventListener('click', e => {
+  // Handle buttons inside Exercise modal (favorites + rating)
+  els.exBackdrop?.addEventListener('click', async e => {
+    // Toggle favorite (modal button)
+    const favToggle = e.target.closest('[data-fav-toggle]');
+    if (favToggle) {
+      const id = favToggle.getAttribute('data-fav-toggle');
+      if (!id) return;
+      toggleFavoriteId(id);
+
+      // If opened from Favorites page, close modal and refresh list
+      if (state.route === 'favorites') {
+        closeExerciseModal();
+        return loadFavorites();
+      }
+      // Otherwise re-render modal so button label updates
+      if (state.currentExerciseId === String(id)) {
+        return openExerciseModal(id);
+      }
+      return;
+    }
+
+    // Open rating modal (modal button)
+    const giveRating = e.target.closest('[data-give-rating]');
+    if (giveRating) {
+      const id = giveRating.getAttribute('data-give-rating');
+      if (id) return openRatingModal(id);
+      return;
+    }
+
+    // Click outside content closes modal
     if (e.target === els.exBackdrop) closeExerciseModal();
   });
 
