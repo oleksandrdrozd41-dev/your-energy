@@ -12,16 +12,19 @@
     <script>
       (function () {
         try {
-          // Robust device detection:
-          // - Works even if the browser forces "Desktop site" viewport width.
-          // - Ensures phones always get the mobile layout (1-column tiles).
+          // Device/layout helpers:
+          // - Use viewport width for responsive layout (desktop/laptop should NOT be treated as phone because of screen height).
+          // - Still handle phones that force "Desktop site" by using UA + mobile OS + physical CSS width.
           var root = document.documentElement;
 
           var dpr = window.devicePixelRatio || 1;
           var sw = (window.screen && window.screen.width) ? window.screen.width : window.innerWidth;
           var sh = (window.screen && window.screen.height) ? window.screen.height : window.innerHeight;
-          // Use the smaller physical side (portrait/landscape-safe).
+
+          // Physical screen width in CSS pixels (helps when a phone reports a big viewport in "Desktop site").
           var cssScreenWidth = Math.min(sw, sh) / dpr;
+
+          var vw = window.innerWidth || cssScreenWidth;
 
           var ua = navigator.userAgent || '';
           var uaMobile = false;
@@ -32,11 +35,21 @@
           // Fallback: match common mobile UAs. (Avoid treating Android tablets as phones unless they say Mobile.)
           if (!uaMobile) uaMobile = /Mobi|iPhone|iPod|Windows Phone|Android\s.*Mobile/i.test(ua);
 
-          // Thresholds (CSS pixels):
-          // Phones: up to 768px (covers large phones where 520px was too strict).
-          // Tablets: up to 1024px.
-          if (uaMobile || cssScreenWidth <= 768) root.classList.add('is-phone');
-          else if (cssScreenWidth <= 1024) root.classList.add('is-tablet');
+          var isMobileOS = /Android|iPhone|iPad|iPod|Windows Phone/i.test(ua);
+
+          var touch = false;
+          try {
+            touch = ('ontouchstart' in window) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
+          } catch (e) {}
+
+          // Thresholds (CSS px):
+          // - Phone: <= 767 by viewport OR UA says mobile OR (mobile OS + touch device with small physical width)
+          // - Tablet: <= 1024 by viewport OR (mobile OS + touch device with tablet-ish physical width)
+          var isPhone = (vw <= 767) || uaMobile || (isMobileOS && touch && cssScreenWidth <= 768);
+          var isTablet = !isPhone && ((vw <= 1024) || (isMobileOS && touch && cssScreenWidth <= 1024));
+
+          if (isPhone) root.classList.add('is-phone');
+          else if (isTablet) root.classList.add('is-tablet');
         } catch (e) {
           /* noop */
         }
