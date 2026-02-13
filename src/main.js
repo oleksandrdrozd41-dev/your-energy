@@ -25,6 +25,9 @@ const els = {
   titleSep: document.querySelector('[data-title-sep]'),
   titleSub: document.querySelector('[data-title-sub]'),
 
+  quoteText: document.querySelector('[data-quote-text]'),
+  quoteAuthor: document.querySelector('[data-quote-author]'),
+
   tabs: document.querySelector('[data-tabs]'),
 
   searchForm: document.querySelector('[data-search]'),
@@ -316,14 +319,14 @@ async function loadCategories() {
   applyView();
 
   const { categories: limit } = getLimits();
-  const filterApi = FILTER_TO_API[state.filter] || 'muscles';
+  const filter = state.filter;
   const page = state.page;
 
   setLoading();
   els.pagination.innerHTML = '';
 
   try {
-    const data = await apiGet(`/filters?${qs({ filter: filterApi, page, limit })}`);
+    const data = await apiGet(`/filters?${qs({ filter, page, limit })}`);
     const items = Array.isArray(data?.results) ? data.results : [];
     state.totalPages = Number(data?.totalPages) || 1;
     renderCategoryTiles(items);

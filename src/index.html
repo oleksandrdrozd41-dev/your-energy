@@ -90,11 +90,21 @@
           </div>
 
           <picture>
-            <source srcset="./img/home/hero.webp" type="image/webp" />
-            <source srcset="./img/home/hero.jpg" type="image/jpeg" />
+            <source
+              type="image/webp"
+              srcset="./img/home/hero-768.webp 768w, ./img/home/hero-1024.webp 1024w, ./img/home/hero.webp 1400w"
+              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 100vw, 1400px"
+            />
+            <source
+              type="image/jpeg"
+              srcset="./img/home/hero-768.jpg 768w, ./img/home/hero-1024.jpg 1024w, ./img/home/hero.jpg 1400w"
+              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 100vw, 1400px"
+            />
             <img
               class="hero__img"
               src="./img/home/hero.jpg"
+              srcset="./img/home/hero-768.jpg 768w, ./img/home/hero-1024.jpg 1024w, ./img/home/hero.jpg 1400w"
+              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 100vw, 1400px"
               alt="Training"
               width="1400"
               height="435"

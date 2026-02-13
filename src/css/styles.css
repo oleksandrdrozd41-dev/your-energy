@@ -270,9 +270,18 @@ button {
   overflow: hidden;
 }
 
+.hero__side-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
 .hero__img {
   margin-top: 22px;
   width: 100%;
+  height: auto;
+  object-fit: cover;
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow);
