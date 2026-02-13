@@ -957,7 +957,13 @@ body[data-route='favorites'] .search {
   }
 }
 
-@media (max-width: 767px) {
+/*
+  NOTE about mobile rendering:
+  Some Android browsers can be forced into “Desktop site” mode which makes the
+  viewport wider (e.g. 980px) and skips normal max-width breakpoints.
+  Adding max-device-width keeps mobile layout correct even in that mode.
+*/
+@media (max-width: 767px), (max-device-width: 767px) {
   .nav,
   .social {
     display: none;
@@ -1300,7 +1306,7 @@ body[data-route='favorites'] .search {
   min-height: 18px;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-device-width: 767px) {
   .modal {
     padding: 44px 20px 20px;
   }
