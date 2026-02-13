@@ -563,6 +563,14 @@ button {
 
 /* Category tile */
 .tile {
+  /*
+    IMPORTANT:
+    On some mobile browsers (and in a few flex/grid nesting cases) the button element
+    may keep its intrinsic "shrink-to-fit" width, which makes tiles look narrow.
+    Force tiles to always fill the available column width (desktop/tablet/mobile).
+  */
+  display: block;
+  width: 100%;
   height: 225px;
   border: none;
   padding: 0;
@@ -1026,14 +1034,28 @@ body[data-route='favorites'] .search {
     display: flex;
     flex-direction: column;
     gap: 28px;
+    /*
+      When we switch the container from CSS Grid to Flex on mobile,
+      the previous `align-items: start` from the desktop grid layout
+      can make children shrink to their content width.
+      Force full-width blocks like in Figma.
+    */
+    align-items: stretch;
   }
 
   .exercises__content {
     order: 1;
+    width: 100%;
   }
 
   .exercises__aside {
     order: 2;
+    width: 100%;
+  }
+
+  /* Ensure the lists inside the content column always occupy full width */
+  .exercises__content .grid {
+    width: 100%;
   }
 
   .exercises__aside {
