@@ -401,7 +401,7 @@ function renderExerciseCards(items, isFavorites) {
             <span class="pill">WORKOUT</span>
             <button class="icon-btn" type="button" aria-label="Remove" data-fav-toggle="${escapeAttr(id)}">
               <svg class="icon" width="16" height="16" aria-hidden="true">
-                <use href="./img/sprite.svg#icon-trash"></use>
+                <use href="#icon-trash"></use>
               </svg>
             </button>
           </div>
@@ -411,7 +411,7 @@ function renderExerciseCards(items, isFavorites) {
             <span class="pill">WORKOUT</span>
             <span class="ex-card__rating">${escapeHtml(rating.toFixed(1))}
               <svg class="icon icon--fill" width="14" height="14" aria-hidden="true">
-                <use href="./img/sprite.svg#icon-star-filled"></use>
+                <use href="#icon-star-filled"></use>
               </svg>
             </span>
           </div>
@@ -425,14 +425,14 @@ function renderExerciseCards(items, isFavorites) {
             <button class="ex-card__start" type="button" data-start="${escapeAttr(id)}">
               Start
               <svg class="icon" width="18" height="18" aria-hidden="true">
-                <use href="./img/sprite.svg#icon-arrow-right"></use>
+                <use href="#icon-arrow-right"></use>
               </svg>
             </button>
           </div>
 
           <div class="ex-card__mid">
             <span class="ex-card__icon" aria-hidden="true">
-              <svg class="icon" width="14" height="14"><use href="./img/sprite.svg#icon-logo"></use></svg>
+              <svg class="icon" width="14" height="14"><use href="#icon-logo"></use></svg>
             </span>
             <h3 class="ex-card__name">${escapeHtml(name)}</h3>
           </div>
@@ -535,7 +535,7 @@ function renderStars(rating) {
   for (let i = 1; i <= 5; i += 1) {
     const filled = i <= full || (i === full + 1 && half);
     stars.push(
-      `<svg class="star" width="18" height="18" aria-hidden="true"><use href="./img/sprite.svg#${filled ? 'icon-star-filled' : 'icon-star-empty'}"></use></svg>`
+      `<svg class="star" width="18" height="18" aria-hidden="true"><use href="#${filled ? 'icon-star-filled' : 'icon-star-empty'}"></use></svg>`
     );
   }
   return stars.join('');
@@ -587,7 +587,7 @@ async function openExerciseModal(id) {
           <div class="modal-actions">
             <button class="btn btn--light" type="button" data-fav-toggle="${escapeAttr(id)}">
               <span class="btn__inner">
-                <svg class="icon" width="18" height="18" aria-hidden="true"><use href="./img/sprite.svg#icon-heart"></use></svg>
+                <svg class="icon" width="18" height="18" aria-hidden="true"><use href="#icon-heart"></use></svg>
                 <span>${isFav ? 'Remove from favorites' : 'Add to favorites'}</span>
               </span>
             </button>
@@ -623,7 +623,7 @@ function openRatingModal(id) {
           .map(
             n =>
               `<button class="rate-star" type="button" data-rate="${n}" aria-label="Rate ${n}">
-                <svg class="star" width="24" height="24" aria-hidden="true"><use href="./img/sprite.svg#icon-star-empty"></use></svg>
+                <svg class="star" width="24" height="24" aria-hidden="true"><use href="#icon-star-empty"></use></svg>
               </button>`
           )
           .join('')}
@@ -647,7 +647,7 @@ function openRatingModal(id) {
     btns.forEach(btn => {
       const n = Number(btn.getAttribute('data-rate'));
       const use = btn.querySelector('use');
-      if (use) use.setAttribute('href', `./img/sprite.svg#${n <= selected ? 'icon-star-filled' : 'icon-star-empty'}`);
+      if (use) use.setAttribute('href', `#${n <= selected ? 'icon-star-filled' : 'icon-star-empty'}`);
     });
   };
 
@@ -704,8 +704,29 @@ function closeRatingModal() {
   lockScroll(false);
 }
 
+let _scrollLockY = 0;
+
 function lockScroll(lock) {
-  document.documentElement.classList.toggle('is-locked', !!lock);
+  const root = document.documentElement;
+
+  if (lock) {
+    _scrollLockY = window.scrollY || 0;
+    root.classList.add('is-locked');
+    // Prevent page jump on mobile when opening modals
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${_scrollLockY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+  } else {
+    root.classList.remove('is-locked');
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    window.scrollTo(0, _scrollLockY);
+  }
 }
 
 /* -------------------- Rendering helpers -------------------- */

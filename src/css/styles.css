@@ -654,6 +654,16 @@ button {
   gap: 8px;
   color: var(--text);
   font-size: 14px;
+
+  /* reset native <button> styles */
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.ex-card__start:hover,
+.ex-card__start:focus-visible {
+  text-decoration: underline;
 }
 
 .ex-card__start .icon {
