@@ -3,6 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!--
+      Some mobile browsers can request the "desktop site" version.
+      In that mode, viewport-based media queries may not match.
+      We add a device class based on physical screen size.
+    -->
+    <script>
+      (function () {
+        try {
+          var dpr = window.devicePixelRatio || 1;
+          var cssScreenWidth = window.screen && window.screen.width ? window.screen.width / dpr : window.innerWidth;
+          var root = document.documentElement;
+          if (cssScreenWidth <= 520) root.classList.add('is-phone');
+          else if (cssScreenWidth <= 1024) root.classList.add('is-tablet');
+        } catch (e) {
+          /* noop */
+        }
+      })();
+    </script>
     <title>Your Energy</title>
   </head>
   <body>

@@ -1319,3 +1319,33 @@ body[data-route='favorites'] .search {
     grid-template-columns: 1fr;
   }
 }
+
+/*
+  Phone layout fallback (important for browsers that request "Desktop site" on mobile).
+  The `is-phone` class is set very early in index.html using physical screen size.
+*/
+html.is-phone body {
+  overflow-x: hidden;
+}
+
+html.is-phone .container {
+  /* Constrain layout to mobile width even when the viewport is "desktop" sized */
+  max-width: 520px;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+html.is-phone .tabs {
+  width: 100%;
+  justify-content: space-between;
+}
+
+html.is-phone .grid--tiles,
+html.is-phone .grid--exercises,
+html.is-phone .grid--favorites {
+  grid-template-columns: 1fr !important;
+}
+
+html.is-phone .tile {
+  height: 160px;
+}
