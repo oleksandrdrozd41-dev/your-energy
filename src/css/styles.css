@@ -1329,8 +1329,13 @@ html.is-phone body {
 }
 
 html.is-phone .container {
-  /* Constrain layout to mobile width even when the viewport is "desktop" sized */
-  max-width: 520px;
+  /*
+    Fill the viewport even if the browser uses a "desktop" layout viewport + scaling
+    (common when the user enables "Desktop site"). Constraining max-width here would
+    make the whole layout look squeezed.
+  */
+  max-width: 100%;
+  width: 100%;
   padding-left: 16px;
   padding-right: 16px;
 }
@@ -1348,4 +1353,15 @@ html.is-phone .grid--favorites {
 
 html.is-phone .tile {
   height: 160px;
+}
+
+/*
+  Extra safeguard for mobile browsers that force a "desktop" viewport (media queries won’t trigger
+  as expected). "max-device-width" targets real phones by physical CSS pixels.
+  Ensures exercise tiles always stretch to full width on mobile.
+*/
+@media (max-device-width: 640px) {
+  .grid--tiles {
+    grid-template-columns: 1fr !important;
+  }
 }

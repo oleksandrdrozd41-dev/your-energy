@@ -12,10 +12,30 @@
     <script>
       (function () {
         try {
-          var dpr = window.devicePixelRatio || 1;
-          var cssScreenWidth = window.screen && window.screen.width ? window.screen.width / dpr : window.innerWidth;
+          // Robust device detection:
+          // - Works even if the browser forces "Desktop site" viewport width.
+          // - Ensures phones always get the mobile layout (1-column tiles).
           var root = document.documentElement;
-          if (cssScreenWidth <= 520) root.classList.add('is-phone');
+
+          var dpr = window.devicePixelRatio || 1;
+          var sw = (window.screen && window.screen.width) ? window.screen.width : window.innerWidth;
+          var sh = (window.screen && window.screen.height) ? window.screen.height : window.innerHeight;
+          // Use the smaller physical side (portrait/landscape-safe).
+          var cssScreenWidth = Math.min(sw, sh) / dpr;
+
+          var ua = navigator.userAgent || '';
+          var uaMobile = false;
+          try {
+            // Prefer UA-CH when available.
+            uaMobile = !!(navigator.userAgentData && navigator.userAgentData.mobile);
+          } catch (e) {}
+          // Fallback: match common mobile UAs. (Avoid treating Android tablets as phones unless they say Mobile.)
+          if (!uaMobile) uaMobile = /Mobi|iPhone|iPod|Windows Phone|Android\s.*Mobile/i.test(ua);
+
+          // Thresholds (CSS pixels):
+          // Phones: up to 768px (covers large phones where 520px was too strict).
+          // Tablets: up to 1024px.
+          if (uaMobile || cssScreenWidth <= 768) root.classList.add('is-phone');
           else if (cssScreenWidth <= 1024) root.classList.add('is-tablet');
         } catch (e) {
           /* noop */
